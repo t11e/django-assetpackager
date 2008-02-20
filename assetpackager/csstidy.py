@@ -460,8 +460,8 @@ class CSSTidy(object):
 
                 if string[i] == self._str_char and not self.escaped(string, i) and not self._str_in_str:
                     self._status = self._from
-                    regex = re.compile(r'([\s]+)')
-                    if not regex.match(self._cur_string).groups() and self._property != 'content':
+                    regex = re.compile(r'([\s]+)', re.I | re.U | re.S)
+                    if regex.match(self._cur_string) is None and self._property != 'content':
                         if self._str_char == '"' or self._str_char == '\'':
                             self._cur_string = self._cur_string[1:-1]
 
