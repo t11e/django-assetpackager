@@ -25,6 +25,7 @@
 from tidyprinter import CSSTidyPrint
 from tidyoptimiser import CSSTidyOptimise
 from tidydata import *
+import re
 
 class CSSTidy(object):
     #Saves the parsed CSS
@@ -454,7 +455,7 @@ class CSSTidy(object):
                     temp_add = "\\A "
                     self.log('Fixed incorrect newline in string', 'Warning')
 
-                if not (self.str_char == ')' and string[i] in GLOBALS['csstidy']['whitespace']):
+                if not (self._str_char == ')' and string[i] in GLOBALS['csstidy']['whitespace']):
                     self._cur_string += temp_add
 
                 if string[i] == self._str_char and not self.escaped(string, i) and not self._str_in_str:
