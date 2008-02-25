@@ -238,7 +238,7 @@ class CSSTidyPrint(object):
 
         self.tokens = self.parser._tokens
 
-    # Same as htmlspecialchars, only that chars are not replaced if $plain !== true. This makes  print_code() cleaner.
+    # Same as htmlspecialchars, only that chars are not replaced if $plain !== True. This makes  print_code() cleaner.
     # @param string $string
     # @param bool $plain
     # @return string

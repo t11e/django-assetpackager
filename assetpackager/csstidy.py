@@ -445,7 +445,7 @@ class CSSTidy(object):
             #/* Case in string */
             elif self._status == 'instr':
                 if self._str_char == ')' and (string[i] == '"' or string[i] == '\'') and not self._str_in_str and not self.escaped(string, i):
-                    self._str_in_str = true
+                    self._str_in_str = True
 
                 elif (self._str_char == ')' and string[i] == '"' or string[i] == '\'') and self._str_in_str and not self.escaped(string, i):
                     self._str_in_str = False
@@ -517,7 +517,7 @@ class CSSTidy(object):
 
         self._sel_separate = []
 
-    #Checks if a character is escaped (and returns true if it is)
+    #Checks if a character is escaped (and returns True if it is)
     def escaped(self, string, pos):
         return not (string[pos-1] != '\\' or self.escaped(string, pos-1))
 
