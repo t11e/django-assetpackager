@@ -212,6 +212,9 @@ class CSSTidy(object):
 
     #Private Methods
     def __parseStatus_is(self, idx):
+        """
+            Parse in Selector
+        """
         ret = 0
 
         if self.__is_token(self._css, idx):
@@ -225,7 +228,7 @@ class CSSTidy(object):
                 self._invalid_at = True
 
                 for name, ttype in data.at_rules.iteritems():
-                    if self._css[idx+1:len(name)+1].lower() == name.lower():
+                    if self._css[idx+1:len(name)].lower() == name.lower():
                         if ttype == 'at':
                             self._at = '@' + name
                         else:
@@ -287,6 +290,9 @@ class CSSTidy(object):
         return ret
 
     def __parseStatus_ip(self, idx):
+        """
+            Parse in property
+        """
         if self.__is_token(self._css, idx):
             if (self._css[idx] == ':' or self._css[idx] == '=') and self._property != '':
                 self._status = 'iv'
@@ -319,7 +325,10 @@ class CSSTidy(object):
         return 0
 
     def __parseStatus_iv(self, idx):
-        pn = (( self._css[idx] == "\n" or self._css[idx] == "\r") and self.__property_is_next(idx+1) or idx == len(self._css)-1)
+        """
+            Parse in value
+        """
+        pn = (( self._css[idx] == "\n" or self._css[idx] == "\r") and self.__property_is_next(idx+1) or idx == len(self._css)-1) #FIX#
         if self.__is_token(self._css, idx) or pn:
             if self._css[idx] == '/' and self._css[idx+1] == '*':
                 self._status = 'ic'
@@ -328,11 +337,7 @@ class CSSTidy(object):
 
             elif self._css[idx] == '"' or self._css[idx] == "'" or self._css[idx] == '(':
                 self._cur_string = self._css[idx]
-                if self._css[idx] == '(':
-                    self._str_char = ')'
-                else:
-                    self._css[idx]
-
+                self._str_char = ')' if self._css[idx] == '(' else self._css[idx]
                 self._status = 'instr'
                 self._from = 'iv'
 
@@ -379,7 +384,6 @@ class CSSTidy(object):
 
                 self._property = self._property.lower()
 
-                ##FIX##self._optimise.subvalue()
                 if self._sub_value != '':
                     self._sub_value_arr.append(self._sub_value)
                     self._sub_value = ''
@@ -388,14 +392,11 @@ class CSSTidy(object):
 
                 self._selector = self._selector.strip()
 
-                ##FIX##self._optimise.value()
-
                 valid = self.__property_is_valid(self._property)
 
                 if (not self._invalid_at or self.getSetting('preserve_css')) and (not self.getSetting('discard_invalid_properties') or valid):
                     self.__css_add_property(self._at, self._selector, self._property, self._value)
                     self.__add_token(data.VALUE, self._value)
-                    ##FIX##self._optimise.shorthands()
 
                 if not valid:
                     if self.getSetting('discard_invalid_properties'):
@@ -419,7 +420,6 @@ class CSSTidy(object):
             self._sub_value += self._css[idx]
 
             if self._css[idx].isspace():
-                ##FIX##self._optimise.subvalue()
                 if self._sub_value != '':
                     self._sub_value_arr.append(self._sub_value)
                     self._sub_value = ''
@@ -427,28 +427,28 @@ class CSSTidy(object):
         return 0
 
     def __parseStatus_instr(self, idx):
-        if self._str_char == ')' and (self._css[idx] == '"' or self._css[idx] == '\'') and not self._str_in_str and not self.escaped(self._css, idx):##FIX?##
-            self._str_in_str = True
-
-        elif (self._str_char == ')' and self._css[idx] == '"' or self._css[idx] == '\'') and self._str_in_str and not self.escaped(self._css, idx):##FIX?##
-            self._str_in_str = False
+        """
+            Parse in String
+        """
+        if self._str_char == ')' and (self._css[idx] == '"' or self._css[idx] == "'") and not self.escaped(self._css, idx):
+            self._str_in_str = not self._str_in_str
 
         temp_add = self._css[idx] # ...and no not-escaped backslash at the previous position
         if (self._css[idx] == "\n" or self._css[idx] == "\r") and not (self._css[idx-1] == '\\' and not self.escaped(self._css, idx-1)):
             temp_add = "\\A "
             self.log('Fixed incorrect newline in string', 'Warning')
 
-        if not (self._str_char == ')' and self._css[idx] in data.whitespace):
+        if not (self._str_char == ')' and self._css[idx].isspace() and not self._str_in_str):
             self._cur_string += temp_add
 
         if self._css[idx] == self._str_char and not self.escaped(self._css, idx) and not self._str_in_str:
             self._status = self._from
             regex = re.compile(r'([\s]+)', re.I | re.U | re.S)
             if regex.match(self._cur_string) is None and self._property != 'content':
-                if self._str_char == '"' or self._str_char == '\'':
+                if self._str_char == '"' or self._str_char == "'":
                     self._cur_string = self._cur_string[1:-1]
 
-                elif len(self._cur_string) > 3 and (self._cur_string[1] == '"' or self._cur_string[1] == '\''):
+                elif len(self._cur_string) > 3 and (self._cur_string[1] == '"' or self._cur_string[1] == "'"):
                     self._cur_string = self._cur_string[0] + self._cur_string[2:-2] + self._cur_string[-1]
 
             if self._from == 'iv':
@@ -460,6 +460,9 @@ class CSSTidy(object):
         return 0
 
     def __parseStatus_ic(self, idx):
+        """
+            Parse css In Comment
+        """
         if self._css[idx] == '*' and self._css[idx+1] == '/':
             self._status = self._from
             self.__add_token(data.COMMENT, self._curComment)
@@ -472,6 +475,9 @@ class CSSTidy(object):
         return 0
 
     def __parseStatus_at(self, idx):
+        """
+            Parse in at-block
+        """
         if self.__is_token(string, idx):
             if self._css[idx] == '/' and self._css[idx+1] == '*':
                 self._status = 'ic'
@@ -501,7 +507,8 @@ class CSSTidy(object):
             lastpos = 0;
             self._sel_separate.append(len(self._selector))
 
-            for num, pos in self._sel_separate.iteritems():
+            for num in xrange(len(self._sel_separate)):
+                pos = self._sel_separate[num]
                 if num == (len(self._sel_separate)-1):
                     pos += 1
 
@@ -509,8 +516,8 @@ class CSSTidy(object):
                 lastpos = pos
 
             if len(new_sels) > 1:
-                for selector in new_sels.itervalues():
-                    self.erge_css_blocks(self._at, selector, self.css[self._at][self._selector])
+                for selector in new_sels:
+                    self.merge_css_blocks(self._at, selector, self._raw_css[self._at][self._selector])
 
                 del self._raw_css[self._at][self._selector]
 
@@ -538,7 +545,7 @@ class CSSTidy(object):
 
     #Checks if the next word in a string from pos is a CSS property
     def __property_is_next(self, pos):
-        istring = self._css[pos: (len(self._css)-pos)]
+        istring = self._css[pos: len(self._css)]
         pos = istring.find(':')
         if pos == -1:
             return False;

@@ -53,8 +53,8 @@ class CSSOptimizer(object):
                     cssdata = self.__merge_bg(cssdata)
 
                 for item, value in cssdata.iteritems():
-                    value = self.__compress_important(value)
                     value = self.__compress_numbers(item, value)
+                    value = self.__compress_important(value)
 
                     if item in data.color_values and self.parser.getSetting('compress_colors'):
                         old = value[:]
@@ -286,7 +286,7 @@ class CSSOptimizer(object):
 
         for l in xrange(len(value)):
             #continue if no numeric value
-            if not (len(value[l]) > 0 and (value[l][0].isdigit() or value[l][0] == '+' or value[l][0] == '-' )):
+            if not (len(value[l]) > 0 and (value[l][0].isdigit() or value[l][0] in ('+', '-') )):
                 continue
 
             #Fix bad colors
@@ -307,15 +307,16 @@ class CSSOptimizer(object):
                 unit_found = False
                 for unit in data.units:
                     pos = value[l].lower().find(unit)
-                    if pos != -1:
+                    if pos != -1 and prop not in data.shorthands:
                         value[l] = self.__remove_leading_zeros(float(value[l][:pos])) + unit
                         unit_found = True
                         break;
 
-                if not unit_found and prop in data.unit_values:
+                if not unit_found and prop in data.unit_values and prop not in data.shorthands:
+                    print prop
                     value[l] = self.__remove_leading_zeros(float(value[l])) + 'px'
 
-                elif not unit_found:
+                elif not unit_found and prop not in data.shorthands:
                     value[l] = self.__remove_leading_zeros(float(value[l]))
 
 
@@ -326,7 +327,7 @@ class CSSOptimizer(object):
 
     def __remove_leading_zeros(self, float_val):
         """
-            Removes the leading seros from a float value
+            Removes the leading zeros from a float value
             @float_val (float)
             @returns (string)
         """
