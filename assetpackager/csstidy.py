@@ -27,12 +27,13 @@ import re
 from optimizer import CSSOptimizer
 from output import CSSPrinter
 import data
+from tools import SortedDict
 
 class CSSTidy(object):
     #Saves the parsed CSS
     _css = ""
-    _raw_css = {}
-    _optimized_css = {}
+    _raw_css = SortedDict()
+    _optimized_css = SortedDict()
 
     #List of Tokens
     _tokens = []
@@ -107,7 +108,7 @@ class CSSTidy(object):
     _added = False
 
     #Saves the message log
-    _log = {}
+    _log = SortedDict()
 
     #Saves the line number
     _line = 1
@@ -509,7 +510,7 @@ class CSSTidy(object):
 
             for num in xrange(len(self._sel_separate)):
                 pos = self._sel_separate[num]
-                if num == (len(self._sel_separate)-1):
+                if num == (len(self._sel_separate)): #CHECK#
                     pos += 1
 
                 new_sels.append(self._selector[lastpos:(pos-lastpos-1)])
@@ -529,10 +530,10 @@ class CSSTidy(object):
             return
 
         if not self._raw_css.has_key(media):
-            self._raw_css[media] = {}
+            self._raw_css[media] = SortedDict()
 
         if not self._raw_css[media].has_key(selector):
-            self._raw_css[media][selector] = {}
+            self._raw_css[media][selector] = SortedDict()
 
         self._added = True
         if self._raw_css[media][selector].has_key(prop):

@@ -23,13 +23,14 @@
 # @author Dj Gilcrease (digitalxero at gmail dot com) 2005-2006
 
 import data
+from tools import SortedDict
 
 
 class CSSOptimizer(object):
     def __init__(self, parser):
         #raw_css is a dict
         self.parser = parser
-        self._optimized_css = {}
+        self._optimized_css = SortedDict
 
 
 #PUBLIC METHODS
@@ -60,16 +61,18 @@ class CSSOptimizer(object):
                         old = value[:]
                         value = self.__compress_color(value)
                         if old != value:
-                            self.parser.log('Optimised ' + item + ': Changed ' + old + ' to ' + value, 'Information')
+                            self.parser.log('In "' + selector + '" Optimised ' + item + ': Changed ' + old + ' to ' + value, 'Information')
 
                     if item == 'font-weight' and self.parser.getSetting('compress_font-weight'):
                         if value  == 'bold':
                             value = '700'
-                            self.parser.log('Optimised font-weight: Changed "bold" to "700"', 'Information')
+                            self.parser.log('In "' + selector + '" Optimised font-weight: Changed "bold" to "700"', 'Information')
 
                         elif value == 'normal':
                             value = '400'
-                            self.parser.log('Optimised font-weight: Changed "normal" to "400"', 'Information')
+                            self.parser.log('In "' + selector + '" Optimised font-weight: Changed "normal" to "400"', 'Information')
+
+                    self._optimized_css[media][selector][item] = value
 
 
         return self._optimized_css
@@ -181,48 +184,40 @@ class CSSOptimizer(object):
 
         ##OPTIMIZE##
 
-        while True:
+        raw_css = self._optimized_css.copy()
+        delete = []
+        add = SortedDict()
+        for media, css in raw_css.iteritems():
+            for selector_one, value_one in css.iteritems():
+                newsel = selector_one
+
+                for selector_two, value_two in css.iteritems():
+                    if selector_one == selector_two:
+                        #We need to skip self
+                        continue
+
+                    if value_one == value_two:
+                        #Ok, we need to merge these two selectors
+                        newsel += ', ' + selector_two
+                        delete.append((media, selector_two))
+
+
+        if not add.has_key(media):
+            add[media] = SortedDict()
+
+        add[media][newsel] = value_one
+        delete.append((media, selector_one))
+
+        for item in delete:
             try:
-                raw_css = self._optimized_css.copy()
-                delete = []
-                add = {}
-                for media, css in raw_css.iteritems():
-                    for selector_one, value_one in css.iteritems():
+                del self._optimized_css[item[0]][item[1]]
+            except:
+                #Must have already been deleted
+                continue
 
+        for media, css in add.iteritems():
+            self._optimized_css[media].update(css)
 
-                        newsel = selector_one
-
-                        for selector_two, value_two in css.iteritems():
-                            if selector_one == selector_two:
-                                #We need to skip self
-                                continue
-
-                            if value_one == value_two:
-                                #Ok, we need to merge these two selectors
-                                newsel += ', ' + selector_two
-                                delete.append((media, selector_two))
-
-                        if newsel != selector_one:
-                            if not add.has_key(media):
-                                add[media] = {}
-
-                            add[media][newsel] = value_one
-                            delete.append((media, selector_one))
-
-                        if len(delete):
-                            for media, css in add.iteritems():
-                                self._optimized_css[media].update(css)
-
-                            for item in delete:
-                                try:
-                                    del self._optimized_css[item[0]][item[1]]
-                                except:
-                                    #Must have already been deleted
-                                    continue
-                            raise RestartLoop("continue")
-                break
-            except RestartLoop:
-                pass
 
 
     def __shorthand(self, value):
@@ -313,7 +308,6 @@ class CSSOptimizer(object):
                         break;
 
                 if not unit_found and prop in data.unit_values and prop not in data.shorthands:
-                    print prop
                     value[l] = self.__remove_leading_zeros(float(value[l])) + 'px'
 
                 elif not unit_found and prop not in data.shorthands:
@@ -381,8 +375,3 @@ class CSSOptimizer(object):
             color = data.optimize_colors[color.lower()]
 
         return color
-
-
-class RestartLoop(Exception):
-    def __init__(self, *args, **kwargs):
-        super(RestartLoop, self).__init__(*args, **kwargs)
