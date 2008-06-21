@@ -329,7 +329,7 @@ class CSSTidy(object):
         """
             Parse in value
         """
-        pn = (( self._css[idx] == "\n" or self._css[idx] == "\r") and self.__property_is_next(idx+1) or idx == len(self._css)-1) #FIX#
+        pn = (( self._css[idx] == "\n" or self._css[idx] == "\r") and self.__property_is_next(idx+1) or idx == len(self._css)) #CHECK#
         if self.__is_token(self._css, idx) or pn:
             if self._css[idx] == '/' and self._css[idx+1] == '*':
                 self._status = 'ic'
@@ -390,6 +390,7 @@ class CSSTidy(object):
                     self._sub_value = ''
 
                 self._value = ' '.join(self._sub_value_arr)
+
 
                 self._selector = self._selector.strip()
 

@@ -43,7 +43,6 @@ class CSSOptimizer(object):
         if self.parser.getSetting('merge_selectors') == 2:
             self.__merge_selectors()
 
-
         ##OPTIMIZE##
         for media, css in self._optimized_css.iteritems():
             for selector, cssdata in css.iteritems():
@@ -180,9 +179,11 @@ class CSSOptimizer(object):
             Very basic and has at least one bug. Hopefully there is a replacement soon.
             @selector_one (string) is the current selector
             @value_one (dict) is a dictionary of the selector properties
+            Note: Currently is the elements of a selector are identical, but in a different order, they are not merged
         """
 
         ##OPTIMIZE##
+        ##FIX##
 
         raw_css = self._optimized_css.copy()
         delete = []
@@ -225,6 +226,9 @@ class CSSOptimizer(object):
             Compresses shorthand values. Example: margin:1px 1px 1px 1px . margin:1px
             @value (string)
         """
+
+        ##FIX##
+
         important = '';
         if self.parser.is_important(value):
             value_list = self.parser.gvw_important(value)
@@ -277,6 +281,8 @@ class CSSOptimizer(object):
             @value (string) is the posible number to be compressed
         """
 
+        ##FIX##
+
         value = value.split('/')
 
         for l in xrange(len(value)):
@@ -315,7 +321,7 @@ class CSSOptimizer(object):
 
 
         if len(value) > 1:
-            return value[0] + '/' + value[1]
+            return '/'.join(value)
 
         return value[0]
 
